@@ -1,94 +1,45 @@
-using System.Collections.Generic;
-
 using UnityEngine;
 
-[CanSaveNLoad(PathName: "Player")]
-public class Player
-{
-    public string name;
-    public int level;
-
-    public float health;
-    public float mana;
-
-    public List<Item> items;
-}
-
-[CanSaveNLoad(PathName: "Item")]
-public class Item
-{
-    public string name;
-    public int count;
-}
+using TMPro;
 
 public class TestScript : MonoBehaviour
 {
-    [SerializeField] private string playerName;
+    [SerializeField] private PlayerInformationPanel panel;
 
-    public string[] itemPreset;
+    private PlayerManager playerManager;
 
-    private Player player;
-
-    public bool DestroyData;
-    
-    void Start()
+    public void CreatePlayer(TMP_InputField inputField)
     {
-        player = SaveNLoad.Load<Player>(playerName);
-        if (player == null)
-            player = CreatePlayer(playerName);
+        Player player = Player.CreateTempPlayer(inputField.text);
 
-        PrintPlayerInfo(player);
+        playerManager.AddPlayer(player);
 
-        if (DestroyData)
-            DestroyPlayer(player);
+        panel.Set(player);
     }
 
-    private void DestroyPlayer(Player player)
+    public void DestroyPlayer(TMP_InputField inputField)
     {
-        SaveNLoad.Delete<Player>(player.name);
+        panel.Clear();
+
+        if ( !playerManager.RemovePlayer(inputField.text) )
+            panel.ShowErrorMessage("Failed to destroy player!");
     }
 
-    private void PrintPlayerInfo(Player player)
+    public void LoadPlayer(TMP_InputField inputField)
     {
-        Debug.Log($"Player: {player.name} ({player.level})");
-        Debug.Log($"Health/Mana: {player.health} / {player.mana}");
+        Player player = playerManager.GetPlayer(inputField.text);
 
-        Debug.Log($"Items: {player.items.Count}");
-        foreach (Item item in player.items)
-            Debug.Log($"\t{item.name}: {item.count}");
-    }
-
-    private Player CreatePlayer(string playerName)
-    {
-        Player player = new Player();
-
-        player.name = playerName;
-
-        player.level = Random.Range(1, 100);
-
-        player.health = Random.Range(10, 100);
-        player.mana = Random.Range(10, 100);
-
-        player.items = new List<Item>();
-
-        int numberOfItem = Random.Range(0, itemPreset.Length + 1);
-
-        List<string> itemList = new List<string>(itemPreset);
-        for (int i = 0; i < numberOfItem; i++) {
-            int index = Random.Range(0, itemList.Count);
-
-            Item item = new Item();
-
-            item.name = itemList[index];
-            item.count = Random.Range(1, 16 + 1);
-
-            player.items.Add(item);
-
-            itemList.RemoveAt(index);
+        panel.Clear();
+        if (player == null) {
+            panel.ShowErrorMessage("Failed to load player!");
+            return ;
         }
 
-        SaveNLoad.Save(player, playerName);
+        panel.Set(player);
+    }
 
-        return player;
+    void Start()
+    {
+        playerManager = PlayerManager.Instantiate();
     }
 }
